@@ -9,8 +9,10 @@ import (
 	"github.com/nhoffmann/monkey/token"
 )
 
+// PROMPT denotes the REPL is waiting for input
 const PROMPT = ">> "
 
+// Start initializes a REPL
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 
@@ -25,7 +27,7 @@ func Start(in io.Reader, out io.Writer) {
 		lexer := lexer.NewLexer(line)
 
 		for tok := lexer.NextToken(); tok.Type != token.EOF; tok = lexer.NextToken() {
-			fmt.Printf("%+v\n", tok)
+			fmt.Fprintf(out, "%+v\n", tok)
 		}
 	}
 }
