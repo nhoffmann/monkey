@@ -58,9 +58,10 @@ var keywords = map[string]TokenType{
 	"return": RETURN,
 }
 
+// LookupIdent tests whether a given ident is a language keyword
 func LookupIdent(ident string) TokenType {
-	if tok, ok := keywords[ident]; ok {
-		return tok
+	if keyword, ok := keywords[ident]; ok {
+		return keyword
 	}
 
 	return IDENT
