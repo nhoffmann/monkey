@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"monkey/lexer"
-	"monkey/token"
+	"github.com/nhoffmann/monkey/lexer"
+	"github.com/nhoffmann/monkey/token"
 )
 
 // PROMPT denotes the REPL is waiting for input
