@@ -210,6 +210,45 @@ func TestParseProgram(t *testing.T) {
 		}
 	})
 
+	t.Run("If Expression", func(t *testing.T) {
+		input := `if (x < y) { x }`
+
+		program := parseInput(t, input)
+
+		assertStatementsPresent(t, program)
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+
+		assertNodeType(t, ok, expressionStatement, "*ast.ExpressionStatement")
+
+		ifExpression, ok := expressionStatement.Expression.(*ast.IfExpression)
+
+		assertInfixExpression(t, ifExpression.Condition, "x", "<", "y")
+
+		assertBlockExpression(t, ifExpression.Consequence, "x")
+
+		if ifExpression.Alternative != nil {
+			t.Errorf("Did not expect alternative but got one: %+v", ifExpression.Alternative)
+		}
+	})
+
+	t.Run("If Else Expression", func(t *testing.T) {
+		input := `if (x < y) { x } else { y }`
+
+		program := parseInput(t, input)
+
+		assertStatementsPresent(t, program)
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+
+		assertNodeType(t, ok, expressionStatement, "*ast.ExpressionStatement")
+
+		ifExpression, ok := expressionStatement.Expression.(*ast.IfExpression)
+
+		assertInfixExpression(t, ifExpression.Condition, "x", "<", "y")
+
+		assertBlockExpression(t, ifExpression.Consequence, "x")
+		assertBlockExpression(t, ifExpression.Alternative, "y")
+	})
+
 	t.Run("Precedence", func(t *testing.T) {
 		tests := []struct {
 			input    string
@@ -336,6 +375,18 @@ func assertLiteralExpression(t *testing.T, expression ast.Expression, expected i
 	default:
 		t.Fatalf("Type of expression not handled: %q", expectedType)
 	}
+}
+
+func assertBlockExpression(t *testing.T, blockStatement *ast.BlockStatement, want interface{}) {
+	t.Helper()
+
+	if len(blockStatement.Statements) != 1 {
+		t.Errorf("Block statements amount mismatch. Expected 1, got %d", len(blockStatement.Statements))
+	}
+
+	statement, ok := blockStatement.Statements[0].(*ast.ExpressionStatement)
+	assertNodeType(t, ok, statement, "*ast.ExpressionStatement")
+	assertLiteralExpression(t, statement.Expression, want)
 }
 
 func assertInfixExpression(t *testing.T, expression ast.Expression, left interface{}, operator string, right interface{}) {
