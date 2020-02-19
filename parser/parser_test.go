@@ -352,7 +352,7 @@ func assertIdentifierLiteral(t *testing.T, expression ast.Expression, want strin
 
 func assertBooleanLiteral(t *testing.T, expression ast.Expression, want bool) {
 	t.Helper()
-	boolean, ok := expression.(*ast.Boolean)
+	boolean, ok := expression.(*ast.BooleanLiteral)
 
 	assertNodeType(t, ok, boolean, "*ast.Boolean")
 	assertBooleanValue(t, boolean, want)
@@ -374,11 +374,11 @@ func assertIntegerLiteralValue(t *testing.T, integerLiteral *ast.IntegerLiteral,
 	}
 }
 
-func assertBooleanValue(t *testing.T, boolean *ast.Boolean, want bool) {
+func assertBooleanValue(t *testing.T, booleanLiteral *ast.BooleanLiteral, want bool) {
 	t.Helper()
 
-	if boolean.Value != want {
-		t.Errorf("Boolean valie mismatch. Expected %t, got %t", boolean.Value, want)
+	if booleanLiteral.Value != want {
+		t.Errorf("Boolean valie mismatch. Expected %t, got %t", booleanLiteral.Value, want)
 	}
 }
 
