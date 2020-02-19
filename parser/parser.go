@@ -416,7 +416,7 @@ type UnparsableIntegerError struct {
 }
 
 func (uie *UnparsableIntegerError) Error() string {
-	return fmt.Sprintf("Counld not parse input to integer: %q", uie.literal)
+	return fmt.Sprintf("Could not parse input to integer: %q", uie.literal)
 }
 
 type NoPrefixParseFunctionError struct {
