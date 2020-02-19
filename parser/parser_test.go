@@ -301,6 +301,67 @@ func TestParseProgram(t *testing.T) {
 		}
 	})
 
+	t.Run("Parse Call expressions", func(t *testing.T) {
+		input := "add(1, 2 * 3, 4 + 5);"
+
+		program := parseInput(t, input)
+		assertStatementsPresent(t, program)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		assertNodeType(t, ok, expressionStatement, "*ast.ExpressionStatement")
+
+		expression, ok := expressionStatement.Expression.(*ast.CallExpression)
+		assertNodeType(t, ok, expression, "*ast.CallExpression")
+
+		assertIdentifierLiteral(t, expression.Function, "add")
+		assertArgumentLength(t, expression, 3)
+
+		assertLiteralExpression(t, expression.Arguments[0], 1)
+		assertInfixExpression(t, expression.Arguments[1], 2, "*", 3)
+		assertInfixExpression(t, expression.Arguments[2], 4, "+", 5)
+	})
+
+	t.Run("Parse call arguments", func(t *testing.T) {
+		tests := []struct {
+			input              string
+			expectedIdentifier string
+			expectedArguments  []string
+		}{
+			{
+				input:              "add();",
+				expectedIdentifier: "add",
+				expectedArguments:  []string{},
+			},
+			{
+				input:              "add(1);",
+				expectedIdentifier: "add",
+				expectedArguments:  []string{"1"},
+			},
+			{
+				input:              "add(1, 2 * 3, 4 + 5);",
+				expectedIdentifier: "add",
+				expectedArguments:  []string{"1", "(2 * 3)", "(4 + 5)"},
+			},
+		}
+
+		for _, test := range tests {
+			program := parseInput(t, test.input)
+
+			expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+			assertNodeType(t, ok, expressionStatement, "*ast.ExpressionStatement")
+			expression, ok := expressionStatement.Expression.(*ast.CallExpression)
+			assertNodeType(t, ok, expression, "*ast.CallExpression")
+
+			assertArgumentLength(t, expression, len(test.expectedArguments))
+
+			for i, arg := range test.expectedArguments {
+				if expression.Arguments[i].String() != arg {
+					t.Errorf("Argument mismatch. Expected %q, got %q", arg, expression.Arguments[i])
+				}
+			}
+		}
+	})
+
 	t.Run("Precedence", func(t *testing.T) {
 		tests := []struct {
 			input    string
@@ -389,6 +450,18 @@ func TestParseProgram(t *testing.T) {
 			{
 				"!(true == true)",
 				"(!(true == true))",
+			},
+			{
+				"a + add(b * c) + d",
+				"((a + add((b * c))) + d)",
+			},
+			{
+				"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+				"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+			},
+			{
+				"add(a + b + c * d / f + g)",
+				"add((((a + b) + ((c * d) / f)) + g))",
 			},
 		}
 
@@ -505,6 +578,14 @@ func assertBooleanValue(t *testing.T, booleanLiteral *ast.BooleanLiteral, want b
 
 	if booleanLiteral.Value != want {
 		t.Errorf("Boolean valie mismatch. Expected %t, got %t", booleanLiteral.Value, want)
+	}
+}
+
+func assertArgumentLength(t *testing.T, callExpression *ast.CallExpression, want int) {
+	t.Helper()
+
+	if len(callExpression.Arguments) != want {
+		t.Errorf("Expected %d arguments, got %d", want, len(callExpression.Arguments))
 	}
 }
 
