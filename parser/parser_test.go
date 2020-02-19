@@ -50,11 +50,11 @@ func TestParseProgram(t *testing.T) {
 		tests := []struct {
 			input              string
 			expectedIdentifier string
-			// expectedValue      interface{}
+			expectedValue      interface{}
 		}{
-			// {"let x = 5;", "x"},
-			// {"let y = true;", "y"},
-			// {"let foobar = y;", "foobar"},
+			{"let x = 5;", "x", 5},
+			{"let y = true;", "y", true},
+			{"let foobar = y;", "foobar", "y"},
 		}
 
 		for _, test := range tests {
