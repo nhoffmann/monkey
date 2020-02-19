@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/nhoffmann/monkey/lexer"
-	"github.com/nhoffmann/monkey/token"
+	"github.com/nhoffmann/monkey/parser"
 )
 
 // PROMPT denotes the REPL is waiting for input
@@ -25,9 +25,24 @@ func Start(in io.Reader, out io.Writer) {
 
 		line := scanner.Text()
 		lexer := lexer.NewLexer(line)
+		parser := parser.NewParser(lexer)
 
-		for tok := lexer.NextToken(); tok.Type != token.EOF; tok = lexer.NextToken() {
-			fmt.Fprintf(out, "%+v\n", tok)
+		program := parser.ParseProgram()
+
+		if len(parser.Errors()) != 0 {
+			printParseErrors(out, parser.Errors())
+			continue
 		}
+
+		io.WriteString(out, program.String())
+		io.WriteString(out, "\n")
+	}
+}
+
+func printParseErrors(out io.Writer, errors []error) {
+	for _, error := range errors {
+		io.WriteString(out, "Parser Error: ")
+		io.WriteString(out, error.Error())
+		io.WriteString(out, "\n")
 	}
 }
