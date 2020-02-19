@@ -121,18 +121,40 @@ func TestParseProgram(t *testing.T) {
 		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
 
 		assertNodeType(t, ok, expressionStatement, "*ast.ExpressionStatement")
-
 		assertIntegerLiteral(t, expressionStatement.Expression, 5)
+	})
+
+	t.Run("Parse boolean expression", func(t *testing.T) {
+		tests := []struct {
+			input           string
+			expectedBoolean bool
+		}{
+			{"true;", true},
+			{"false;", false},
+		}
+
+		for _, test := range tests {
+			program := parseInput(t, test.input)
+
+			assertStatementsPresent(t, program)
+
+			expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+			assertNodeType(t, ok, expressionStatement, "*ast.ExpressionStatement")
+
+			assertBooleanLiteral(t, expressionStatement.Expression, test.expectedBoolean)
+		}
 	})
 
 	t.Run("Parse prefix expression", func(t *testing.T) {
 		tests := []struct {
-			input        string
-			operator     string
-			integerValue int64
+			input    string
+			operator string
+			value    interface{}
 		}{
 			{"!5", "!", 5},
 			{"-15", "-", 15},
+			{"!true", "!", true},
+			{"!false", "!", false},
 		}
 
 		for _, test := range tests {
@@ -149,16 +171,16 @@ func TestParseProgram(t *testing.T) {
 			assertNodeType(t, ok, prefix, "*ast.PrefixExpression")
 			assertOperator(t, prefix.Operator, test.operator)
 
-			assertIntegerLiteral(t, prefix.Right, test.integerValue)
+			assertLiteralExpression(t, prefix.Right, test.value)
 		}
 	})
 
 	t.Run("Parse infix expressions", func(t *testing.T) {
 		tests := []struct {
 			input      string
-			leftValue  int64
+			leftValue  interface{}
 			operator   string
-			rightValue int64
+			rightValue interface{}
 		}{
 			{"5 + 5;", 5, "+", 5},
 			{"5 - 5;", 5, "-", 5},
@@ -168,6 +190,9 @@ func TestParseProgram(t *testing.T) {
 			{"5 < 5;", 5, "<", 5},
 			{"5 == 5;", 5, "==", 5},
 			{"5 != 5;", 5, "!=", 5},
+			{"true == true", true, "==", true},
+			{"true != false", true, "!=", false},
+			{"false == false", false, "==", false},
 		}
 
 		for _, test := range tests {
@@ -181,10 +206,7 @@ func TestParseProgram(t *testing.T) {
 
 			infix, ok := expressionStatement.Expression.(*ast.InfixExpression)
 
-			assertNodeType(t, ok, infix, "*ast.InfixExpression")
-			assertIntegerLiteral(t, infix.Left, test.leftValue)
-			assertOperator(t, infix.Operator, test.operator)
-			assertIntegerLiteral(t, infix.Right, test.rightValue)
+			assertInfixExpression(t, infix, test.leftValue, test.operator, test.rightValue)
 		}
 	})
 
@@ -241,6 +263,22 @@ func TestParseProgram(t *testing.T) {
 				"3 + 4 * 5 == 3 * 1 + 4 * 5",
 				"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
 			},
+			{
+				"true",
+				"true",
+			},
+			{
+				"false",
+				"false",
+			},
+			{
+				"3 > 5 == false",
+				"((3 > 5) == false)",
+			},
+			{
+				"3 < 5 == true",
+				"((3 < 5) == true)",
+			},
 		}
 
 		for _, test := range tests {
@@ -263,15 +301,64 @@ func assertStatementsPresent(t *testing.T, program *ast.Program) {
 	}
 }
 
-func assertIntegerLiteral(t *testing.T, integerLiteral ast.Expression, want int64) {
-	literal, ok := integerLiteral.(*ast.IntegerLiteral)
+func assertLiteralExpression(t *testing.T, expression ast.Expression, expected interface{}) {
+	t.Helper()
 
-	assertNodeType(t, ok, literal, "*ast.IntegerLiteral")
-	assertIntegerLiteralValue(t, literal, want)
-	assertTokenLiteral(t, literal, strconv.FormatInt(want, 10))
+	switch expectedType := expected.(type) {
+	case int:
+		assertLiteralExpression(t, expression, int64(expectedType))
+	case int64:
+		assertIntegerLiteral(t, expression, expectedType)
+	case string:
+		assertIdentifierLiteral(t, expression, expectedType)
+	case bool:
+		assertBooleanLiteral(t, expression, expectedType)
+	default:
+		t.Fatalf("Type of expression not handled: %q", expectedType)
+	}
 }
 
-func assertIdentifierValue(t *testing.T, identifier *ast.Identifier, want string) {
+func assertInfixExpression(t *testing.T, expression ast.Expression, left interface{}, operator string, right interface{}) {
+	t.Helper()
+	infixExpression, ok := expression.(*ast.InfixExpression)
+
+	assertNodeType(t, ok, infixExpression, "*ast.InfixExpression")
+	assertLiteralExpression(t, infixExpression.Left, left)
+
+	if infixExpression.Operator != operator {
+		t.Errorf("Operator does not match. Expected %q, got %q", infixExpression.Operator, operator)
+	}
+
+	assertLiteralExpression(t, infixExpression.Right, right)
+}
+
+func assertIntegerLiteral(t *testing.T, expression ast.Expression, want int64) {
+	t.Helper()
+	integerLiteral, ok := expression.(*ast.IntegerLiteral)
+
+	assertNodeType(t, ok, integerLiteral, "*ast.IntegerLiteral")
+	assertIntegerLiteralValue(t, integerLiteral, want)
+	assertTokenLiteral(t, integerLiteral, strconv.FormatInt(want, 10))
+}
+
+func assertIdentifierLiteral(t *testing.T, expression ast.Expression, want string) {
+	t.Helper()
+	identifier, ok := expression.(*ast.Identifier)
+
+	assertNodeType(t, ok, identifier, "*ast.Identifier")
+	assertIdentifierValue(t, identifier, want)
+	assertTokenLiteral(t, identifier, want)
+}
+
+func assertBooleanLiteral(t *testing.T, expression ast.Expression, want bool) {
+	t.Helper()
+	boolean, ok := expression.(*ast.BooleanLiteral)
+
+	assertNodeType(t, ok, boolean, "*ast.Boolean")
+	assertBooleanValue(t, boolean, want)
+}
+
+func assertIdentifierValue(t *testing.T, identifier *ast.Identifier, want interface{}) {
 	t.Helper()
 
 	if identifier.Value != want {
@@ -284,6 +371,14 @@ func assertIntegerLiteralValue(t *testing.T, integerLiteral *ast.IntegerLiteral,
 
 	if integerLiteral.Value != want {
 		t.Errorf("IntegerLiteral value mismatch. Expected %q, got %q", want, integerLiteral.Value)
+	}
+}
+
+func assertBooleanValue(t *testing.T, booleanLiteral *ast.BooleanLiteral, want bool) {
+	t.Helper()
+
+	if booleanLiteral.Value != want {
+		t.Errorf("Boolean valie mismatch. Expected %t, got %t", booleanLiteral.Value, want)
 	}
 }
 
@@ -313,7 +408,7 @@ func assertNodeType(t *testing.T, ok bool, node ast.Node, want string) {
 	t.Errorf("Type of Node not correct. Expected %q, got %T", want, node)
 }
 
-func assertTokenLiteral(t *testing.T, node ast.Node, want string) {
+func assertTokenLiteral(t *testing.T, node ast.Node, want interface{}) {
 	t.Helper()
 
 	if node.TokenLiteral() != want {
