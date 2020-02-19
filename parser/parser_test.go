@@ -235,10 +235,9 @@ func TestParseProgram(t *testing.T) {
 		input := `if (x < y) { x } else { y }`
 
 		program := parseInput(t, input)
-
 		assertStatementsPresent(t, program)
-		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
 
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
 		assertNodeType(t, ok, expressionStatement, "*ast.ExpressionStatement")
 
 		ifExpression, ok := expressionStatement.Expression.(*ast.IfExpression)
@@ -247,6 +246,59 @@ func TestParseProgram(t *testing.T) {
 
 		assertBlockExpression(t, ifExpression.Consequence, "x")
 		assertBlockExpression(t, ifExpression.Alternative, "y")
+	})
+
+	t.Run("Function Literal", func(t *testing.T) {
+		input := `fn(x, y) { x + y; }`
+
+		program := parseInput(t, input)
+		assertStatementsPresent(t, program)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		assertNodeType(t, ok, expressionStatement, "*ast.ExpressionStatement")
+
+		functionLiteral, ok := expressionStatement.Expression.(*ast.FunctionLiteral)
+		assertNodeType(t, ok, functionLiteral, "*ast.FunctionLiteral")
+
+		if len(functionLiteral.Parameters) != 2 {
+			t.Errorf("Expected 2 parameters, got %d", len(functionLiteral.Parameters))
+		}
+
+		assertLiteralExpression(t, functionLiteral.Parameters[0], "x")
+		assertLiteralExpression(t, functionLiteral.Parameters[1], "y")
+
+		assertBlockExpression(t, functionLiteral.Body, nil)
+
+		bodyStatement, ok := functionLiteral.Body.Statements[0].(*ast.ExpressionStatement)
+		assertNodeType(t, ok, functionLiteral, "*ast.ExpressionStatement")
+
+		assertInfixExpression(t, bodyStatement.Expression, "x", "+", "y")
+	})
+
+	t.Run("Parse function parameters", func(t *testing.T) {
+		tests := []struct {
+			input          string
+			expectedParams []string
+		}{
+			{"fn() {}", []string{}},
+			{"fn(x) {}", []string{"x"}},
+			{"fn(x, y, z) {}", []string{"x", "y", "z"}},
+		}
+
+		for _, test := range tests {
+			program := parseInput(t, test.input)
+
+			statement := program.Statements[0].(*ast.ExpressionStatement)
+			functionLiteral := statement.Expression.(*ast.FunctionLiteral)
+
+			if len(functionLiteral.Parameters) != len(test.expectedParams) {
+				t.Errorf("Expected %d function parameters, got %d", len(functionLiteral.Parameters), len(test.expectedParams))
+			}
+
+			for i, identifier := range test.expectedParams {
+				assertLiteralExpression(t, functionLiteral.Parameters[i], identifier)
+			}
+		}
 	})
 
 	t.Run("Precedence", func(t *testing.T) {
@@ -386,7 +438,10 @@ func assertBlockExpression(t *testing.T, blockStatement *ast.BlockStatement, wan
 
 	statement, ok := blockStatement.Statements[0].(*ast.ExpressionStatement)
 	assertNodeType(t, ok, statement, "*ast.ExpressionStatement")
-	assertLiteralExpression(t, statement.Expression, want)
+
+	if want != nil {
+		assertLiteralExpression(t, statement.Expression, want)
+	}
 }
 
 func assertInfixExpression(t *testing.T, expression ast.Expression, left interface{}, operator string, right interface{}) {
