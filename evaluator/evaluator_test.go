@@ -137,6 +137,25 @@ func TestEvaluator(t *testing.T) {
 				`,
 				10,
 			},
+			{
+				`
+				let f = fn(x) {
+				return x;
+				x + 10;
+				};
+				f(10);`,
+				10,
+			},
+			{
+				`
+				let f = fn(x) {
+				let result = x + 10;
+				return result;
+				return 10;
+				};
+				f(10);`,
+				20,
+			},
 		}
 
 		for _, test := range tests {
@@ -198,7 +217,7 @@ func TestEvaluator(t *testing.T) {
 			errorObject, ok := evaluated.(*object.Error)
 
 			if !ok {
-				t.Errorf("Expected an error, got %T: %+v", evaluated, evaluated)
+				t.Errorf("Expected object.Error, got %T: %+v", evaluated, evaluated)
 				continue
 			}
 
@@ -228,6 +247,62 @@ func TestEvaluator(t *testing.T) {
 
 			assertIntegerObject(t, evaluated, test.expected)
 		}
+	})
+
+	t.Run("Evaluate Function Object", func(t *testing.T) {
+		input := "fn(x) { x + 2; };"
+
+		evaluated := evaluateInput(t, input)
+
+		function, ok := evaluated.(*object.Function)
+		if !ok {
+			t.Fatalf("Expected object.Function, got %T: %+v", evaluated, evaluated)
+		}
+
+		if len(function.Parameters) != 1 {
+			t.Fatalf("Function has wrong parameters: %+v", function.Parameters)
+		}
+
+		if function.Parameters[0].String() != "x" {
+			t.Fatalf("Parameter is not 'x'. Got %q", function.Parameters[0])
+		}
+
+		expectedBody := "(x + 2)"
+
+		if function.Body.String() != expectedBody {
+			t.Fatalf("Expected body to be %q, got %q", expectedBody, function.Body.String())
+		}
+	})
+
+	t.Run("Function Application", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected int64
+		}{
+			{"let identity = fn(x) { x; }; identity(5);", 5},
+			{"let identity = fn(x) { return x; }; identity(5);", 5},
+			{"let double = fn(x) { x * 2; }; double(5);", 10},
+			{"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+			{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+			{"fn(x) { x; }(5)", 5},
+		}
+
+		for _, test := range tests {
+			evaluated := evaluateInput(t, test.input)
+			assertIntegerObject(t, evaluated, test.expected)
+		}
+	})
+
+	t.Run("Closures", func(t *testing.T) {
+		input := `
+		let newAdder = fn(x) {
+			fn(y) { x + y };
+		};
+
+		let addTwo = newAdder(2);
+		addTwo(2)`
+
+		assertIntegerObject(t, evaluateInput(t, input), 4)
 	})
 }
 
