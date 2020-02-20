@@ -89,6 +89,33 @@ func TestEvaluator(t *testing.T) {
 			assertBooleanObject(t, evaluated, test.expected)
 		}
 	})
+
+	t.Run("Evaluate If Else Expression", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected interface{}
+		}{
+			{"if (true) { 10 }", 10},
+			{"if (false) { 10 }", nil},
+			// {"if (1) { 10 }", 10},
+			{"if (1 < 2) { 10 }", 10},
+			{"if (1 > 2) { 10 }", nil},
+			{"if (1 > 2) { 10 } else { 20 }", 20},
+			{"if (1 < 2) { 10 } else { 20 }", 10},
+		}
+
+		for _, test := range tests {
+			evaluated := evaluateInput(t, test.input)
+
+			integerObject, ok := test.expected.(int)
+
+			if ok {
+				assertIntegerObject(t, evaluated, int64(integerObject))
+			} else {
+				assertNullObject(t, evaluated)
+			}
+		}
+	})
 }
 
 func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
@@ -116,6 +143,12 @@ func assertBooleanObject(t *testing.T, evaluated object.Object, want bool) {
 
 	if booleanObject.Value != want {
 		t.Errorf("Object has improper value. Expected %t, got %t", want, booleanObject.Value)
+	}
+}
+
+func assertNullObject(t *testing.T, evaluated object.Object) {
+	if evaluated != NULL {
+		t.Errorf("Object is not NULL. Got %T:%+v", evaluated, evaluated)
 	}
 }
 
