@@ -145,6 +145,68 @@ func TestEvaluator(t *testing.T) {
 			assertIntegerObject(t, evaluated, test.expected)
 		}
 	})
+
+	t.Run("Error handling", func(t *testing.T) {
+		tests := []struct {
+			input           string
+			expectedMessage string
+		}{
+			{
+				"5 + true",
+				"type mismatch: INTEGER + BOOLEAN",
+			},
+			{
+				"5 + true; 5",
+				"type mismatch: INTEGER + BOOLEAN",
+			},
+			{
+				"-true",
+				"unknown operator: -BOOLEAN",
+			},
+			{
+				"true + false",
+				"unknown operator: BOOLEAN + BOOLEAN",
+			},
+			{
+				"5; true + false; 5",
+				"unknown operator: BOOLEAN + BOOLEAN",
+			},
+			{
+				"if (10 > 1) { true + false }",
+				"unknown operator: BOOLEAN + BOOLEAN",
+			},
+			{
+				`if(10 > 1) {
+					if(10 > 1) {
+						return true + false;
+					}
+
+					return 1;
+				}
+				`,
+				"unknown operator: BOOLEAN + BOOLEAN",
+			},
+		}
+
+		for _, test := range tests {
+			evaluated := evaluateInput(t, test.input)
+
+			errorObject, ok := evaluated.(*object.Error)
+
+			if !ok {
+				t.Errorf("Expected an error, got %T: %+v", evaluated, evaluated)
+				continue
+			}
+
+			if errorObject.Message != test.expectedMessage {
+				t.Errorf(
+					"Wrong error message. Expected %q, got %q",
+					test.expectedMessage,
+					errorObject.Message,
+				)
+			}
+		}
+	})
 }
 
 func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
@@ -153,12 +215,13 @@ func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
 	integerObject, ok := evaluated.(*object.Integer)
 
 	if !ok {
-		t.Fatalf("Object is not an integer. Got %T: %+v", evaluated, evaluated)
+		t.Errorf("Object is not an integer. Got %T: %+v", evaluated, evaluated)
+	} else {
+		if integerObject.Value != want {
+			t.Errorf("Object has improper value. Expected %d, got %d", want, integerObject.Value)
+		}
 	}
 
-	if integerObject.Value != want {
-		t.Errorf("Object has improper value. Expected %d, got %d", want, integerObject.Value)
-	}
 }
 
 func assertBooleanObject(t *testing.T, evaluated object.Object, want bool) {
@@ -167,12 +230,13 @@ func assertBooleanObject(t *testing.T, evaluated object.Object, want bool) {
 	booleanObject, ok := evaluated.(*object.Boolean)
 
 	if !ok {
-		t.Fatalf("Object is not a boolean. Got %t: %+v", evaluated, evaluated)
+		t.Errorf("Object is not a boolean. Got %t: %+v", evaluated, evaluated)
+	} else {
+		if booleanObject.Value != want {
+			t.Errorf("Object has improper value. Expected %t, got %t", want, booleanObject.Value)
+		}
 	}
 
-	if booleanObject.Value != want {
-		t.Errorf("Object has improper value. Expected %t, got %t", want, booleanObject.Value)
-	}
 }
 
 func assertNullObject(t *testing.T, evaluated object.Object) {

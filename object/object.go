@@ -11,6 +11,7 @@ const (
 	BOOLEAN      = "BOOLEAN"
 	NULL         = "NULL"
 	RETURN_VALUE = "RETURN_VALUE"
+	ERROR        = "ERROR"
 )
 
 type Object interface {
@@ -43,3 +44,10 @@ type ReturnValue struct {
 
 func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE }
 func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
+
+type Error struct {
+	Message string
+}
+
+func (e *Error) Type() ObjectType { return ERROR }
+func (e *Error) Inspect() string  { return "Interpreter Error:" + e.Message }
