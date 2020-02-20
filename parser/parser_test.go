@@ -145,6 +145,28 @@ func TestParseProgram(t *testing.T) {
 		}
 	})
 
+	t.Run("Parse string literal", func(t *testing.T) {
+		input := `"hello world"`
+
+		program := parseInput(t, input)
+
+		assertStatementsPresent(t, program)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		stringLiteral, ok := expressionStatement.Expression.(*ast.StringLiteral)
+		assertNodeType(t, ok, stringLiteral, "*ast.StringLiteral")
+
+		expectedValue := "hello world"
+
+		if stringLiteral.Value != expectedValue {
+			t.Errorf(
+				"String literal value not correct. Expected %q, got %q",
+				expectedValue,
+				stringLiteral.Value,
+			)
+		}
+	})
+
 	t.Run("Parse prefix expression", func(t *testing.T) {
 		tests := []struct {
 			input    string

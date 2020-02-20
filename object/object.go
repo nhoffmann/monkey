@@ -17,6 +17,7 @@ const (
 	RETURN_VALUE = "RETURN_VALUE"
 	ERROR        = "ERROR"
 	FUNCTION     = "FUNCTION"
+	STRING       = "STRING"
 )
 
 type Object interface {
@@ -30,6 +31,13 @@ type Integer struct {
 
 func (i *Integer) Type() ObjectType { return INTEGER }
 func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
+
+type String struct {
+	Value string
+}
+
+func (s *String) Type() ObjectType { return STRING }
+func (s *String) Inspect() string  { return s.Value }
 
 type Boolean struct {
 	Value bool

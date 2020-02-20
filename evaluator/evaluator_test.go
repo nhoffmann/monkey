@@ -62,6 +62,21 @@ func TestEvaluator(t *testing.T) {
 		}
 	})
 
+	t.Run("Evaluate String literals", func(t *testing.T) {
+		input := `"Hello World!"`
+
+		evaluated := evaluateInput(t, input)
+
+		str, ok := evaluated.(*object.String)
+		if !ok {
+			t.Fatalf("Object is not a string. Got %t: %+v", evaluated, evaluated)
+		}
+
+		if str.Value != "Hello World!" {
+			t.Errorf("String has wrong value. Got %q", str.Value)
+		}
+	})
+
 	t.Run("Evaluate Bang Operator", func(t *testing.T) {
 		tests := []struct {
 			input    string
@@ -208,6 +223,10 @@ func TestEvaluator(t *testing.T) {
 			{
 				"foobar",
 				"identifier not found: foobar",
+			},
+			{
+				`"Hello" - "World"`,
+				"unknown operator: STRING - STRING",
 			},
 		}
 
