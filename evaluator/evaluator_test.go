@@ -116,6 +116,35 @@ func TestEvaluator(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Evaluate Return Statements", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected int64
+		}{
+			{"return 10", 10},
+			{"return 10; 9;", 10},
+			{"return 2 * 5; 9", 10},
+			{"9; return 2 * 5; 9", 10},
+			{
+				`if(10 > 1) {
+					if(10 > 1) {
+						return 10;
+					}
+
+					return 1;
+				}
+				`,
+				10,
+			},
+		}
+
+		for _, test := range tests {
+			evaluated := evaluateInput(t, test.input)
+
+			assertIntegerObject(t, evaluated, test.expected)
+		}
+	})
 }
 
 func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {

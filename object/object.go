@@ -7,9 +7,10 @@ import (
 type ObjectType string
 
 const (
-	INTEGER = "INTEGER"
-	BOOLEAN = "BOOLEAN"
-	NULL    = "NULL"
+	INTEGER      = "INTEGER"
+	BOOLEAN      = "BOOLEAN"
+	NULL         = "NULL"
+	RETURN_VALUE = "RETURN_VALUE"
 )
 
 type Object interface {
@@ -35,3 +36,10 @@ type Null struct{}
 
 func (n *Null) Type() ObjectType { return NULL }
 func (n *Null) Inspect() string  { return "null" }
+
+type ReturnValue struct {
+	Value Object
+}
+
+func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE }
+func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
