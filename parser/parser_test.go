@@ -485,6 +485,14 @@ func TestParseProgram(t *testing.T) {
 				"add(a + b + c * d / f + g)",
 				"add((((a + b) + ((c * d) / f)) + g))",
 			},
+			{
+				"a * [1, 2, 3, 4][b * c] * d",
+				"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+			},
+			{
+				"add(a * b[2], b[1], 2 * [1, 2][1])",
+				"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+			},
 		}
 
 		for _, test := range tests {
@@ -515,6 +523,19 @@ func TestParseProgram(t *testing.T) {
 		assertIntegerLiteral(t, arrayStatement.Elements[0], 1)
 		assertInfixExpression(t, arrayStatement.Elements[1], 2, "*", 2)
 		assertInfixExpression(t, arrayStatement.Elements[2], 3, "+", 3)
+	})
+
+	t.Run("Parse index epressions", func(t *testing.T) {
+		input := "myArray[1 + 1]"
+
+		program := parseInput(t, input)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		indexExpressions, ok := expressionStatement.Expression.(*ast.IndexExpression)
+		assertNodeType(t, ok, indexExpressions, "*ast.IndexExpression")
+
+		assertIdentifierLiteral(t, indexExpressions.Left, "myArray")
+		assertInfixExpression(t, indexExpressions.Index, 1, "+", 1)
 	})
 }
 
