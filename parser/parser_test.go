@@ -497,6 +497,25 @@ func TestParseProgram(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Parse array literals", func(t *testing.T) {
+		input := "[1, 2 * 2, 3 + 3]"
+
+		program := parseInput(t, input)
+		assertStatementsPresent(t, program)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		arrayStatement, ok := expressionStatement.Expression.(*ast.ArrayLiteral)
+		assertNodeType(t, ok, arrayStatement, "*ast.ArrayLiteral")
+
+		if len(arrayStatement.Elements) != 3 {
+			t.Fatalf("Expected exactly 3 elements, got %d", len(arrayStatement.Elements))
+		}
+
+		assertIntegerLiteral(t, arrayStatement.Elements[0], 1)
+		assertInfixExpression(t, arrayStatement.Elements[1], 2, "*", 2)
+		assertInfixExpression(t, arrayStatement.Elements[2], 3, "+", 3)
+	})
 }
 
 func assertStatementsPresent(t *testing.T, program *ast.Program) {
