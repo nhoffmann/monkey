@@ -334,6 +334,7 @@ func TestEvaluator(t *testing.T) {
 			{`len("hello world")`, 11},
 			{`len(1)`, "argument to `len` not supported, got INTEGER."},
 			{`len("one", "two")`, "wrong number of arguments. Got 2, want 1."},
+			{"let a = [1, 2, 3]; len(a)", 3},
 		}
 
 		for _, test := range tests {
@@ -353,6 +354,54 @@ func TestEvaluator(t *testing.T) {
 				if errorObject.Message != expected {
 					t.Errorf("wrong error message. Expected %q, got %q", expected, errorObject.Message)
 				}
+			}
+		}
+	})
+
+	t.Run("Array literals", func(t *testing.T) {
+		input := "[1, 2 * 2, 3 + 3]"
+
+		evaluated := evaluateInput(t, input)
+
+		result, ok := evaluated.(*object.Array)
+		if !ok {
+			t.Fatalf("Object is not Array. Got %T: %+v", evaluated, evaluated)
+		}
+
+		if len(result.Elements) != 3 {
+			t.Fatalf("Expected exactly 3 elements but got %d", len(result.Elements))
+		}
+
+		assertIntegerObject(t, result.Elements[0], 1)
+		assertIntegerObject(t, result.Elements[1], 4)
+		assertIntegerObject(t, result.Elements[2], 6)
+	})
+
+	t.Run("Array index expressions", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected interface{}
+		}{
+			{"[1, 2, 3][0]", 1},
+			{"[1, 2, 3][1]", 2},
+			{"[1, 2, 3][2]", 3},
+			{"let i = 0; [1][i]", 1},
+			{"[1, 2, 3][1 + 1]", 3},
+			{"let a = [1, 2, 3]; a[2]", 3},
+			{"let a = [1, 2, 3]; a[0] + a[1] + a[2]", 6},
+			{"let a = [1, 2, 3]; let i = a[0]; a[i]", 2},
+			{"[1, 2, 3][3]", nil},
+			{"[1, 2, 3][-1]", nil},
+		}
+
+		for _, test := range tests {
+			evaluated := evaluateInput(t, test.input)
+
+			integer, ok := test.expected.(int)
+			if ok {
+				assertIntegerObject(t, evaluated, int64(integer))
+			} else {
+				assertNullObject(t, evaluated)
 			}
 		}
 	})

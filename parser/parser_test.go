@@ -485,6 +485,14 @@ func TestParseProgram(t *testing.T) {
 				"add(a + b + c * d / f + g)",
 				"add((((a + b) + ((c * d) / f)) + g))",
 			},
+			{
+				"a * [1, 2, 3, 4][b * c] * d",
+				"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+			},
+			{
+				"add(a * b[2], b[1], 2 * [1, 2][1])",
+				"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+			},
 		}
 
 		for _, test := range tests {
@@ -496,6 +504,38 @@ func TestParseProgram(t *testing.T) {
 				t.Errorf("Expected %q, got %q", test.expected, actual)
 			}
 		}
+	})
+
+	t.Run("Parse array literals", func(t *testing.T) {
+		input := "[1, 2 * 2, 3 + 3]"
+
+		program := parseInput(t, input)
+		assertStatementsPresent(t, program)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		arrayStatement, ok := expressionStatement.Expression.(*ast.ArrayLiteral)
+		assertNodeType(t, ok, arrayStatement, "*ast.ArrayLiteral")
+
+		if len(arrayStatement.Elements) != 3 {
+			t.Fatalf("Expected exactly 3 elements, got %d", len(arrayStatement.Elements))
+		}
+
+		assertIntegerLiteral(t, arrayStatement.Elements[0], 1)
+		assertInfixExpression(t, arrayStatement.Elements[1], 2, "*", 2)
+		assertInfixExpression(t, arrayStatement.Elements[2], 3, "+", 3)
+	})
+
+	t.Run("Parse index epressions", func(t *testing.T) {
+		input := "myArray[1 + 1]"
+
+		program := parseInput(t, input)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		indexExpressions, ok := expressionStatement.Expression.(*ast.IndexExpression)
+		assertNodeType(t, ok, indexExpressions, "*ast.IndexExpression")
+
+		assertIdentifierLiteral(t, indexExpressions.Left, "myArray")
+		assertInfixExpression(t, indexExpressions.Index, 1, "+", 1)
 	})
 }
 
