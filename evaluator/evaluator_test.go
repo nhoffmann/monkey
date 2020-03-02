@@ -323,6 +323,39 @@ func TestEvaluator(t *testing.T) {
 
 		assertIntegerObject(t, evaluateInput(t, input), 4)
 	})
+
+	t.Run("Builtin Function", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected interface{}
+		}{
+			{`len("")`, 0},
+			{`len("four")`, 4},
+			{`len("hello world")`, 11},
+			{`len(1)`, "argument to `len` not supported, got INTEGER."},
+			{`len("one", "two")`, "wrong number of arguments. Got 2, want 1."},
+		}
+
+		for _, test := range tests {
+			evaluated := evaluateInput(t, test.input)
+
+			switch expected := test.expected.(type) {
+			case int:
+				assertIntegerObject(t, evaluated, int64(expected))
+			case string:
+				errorObject, ok := evaluated.(*object.Error)
+
+				if !ok {
+					t.Errorf("Object is not Error. Got %T: %+v", evaluated, evaluated)
+					continue
+				}
+
+				if errorObject.Message != expected {
+					t.Errorf("wrong error message. Expected %q, got %q", expected, errorObject.Message)
+				}
+			}
+		}
+	})
 }
 
 func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
