@@ -405,6 +405,103 @@ func TestEvaluator(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Hash literals", func(t *testing.T) {
+		input := `let two = "two";
+		{
+			"one": 10 - 9,
+			two: 1 + 1,
+			"thr" + "ee": 6 / 2,
+			4: 4,
+			true: 5,
+			false: 6,
+		}`
+
+		evaluated := evaluateInput(t, input)
+
+		hash, ok := evaluated.(*object.Hash)
+		if !ok {
+			t.Fatalf("Eval didn't return Hash. Got %T: %+v", evaluated, evaluated)
+		}
+
+		expected := map[object.HashKey]int64{
+			(&object.String{Value: "one"}).HashKey():   1,
+			(&object.String{Value: "two"}).HashKey():   2,
+			(&object.String{Value: "three"}).HashKey(): 3,
+			(&object.Integer{Value: 4}).HashKey():      4,
+			TRUE.HashKey():                             5,
+			FALSE.HashKey():                            6,
+		}
+
+		if len(hash.Pairs) != len(expected) {
+			t.Fatalf(
+				"Hash has wrong number of arguments. Want %d, got %d",
+				len(hash.Pairs),
+				len(expected),
+			)
+		}
+
+		for expectedKey, expectedValue := range expected {
+			pair, ok := hash.Pairs[expectedKey]
+			if !ok {
+				t.Errorf("No pair for given key in Pairs")
+			}
+
+			assertIntegerObject(t, pair.Value, expectedValue)
+		}
+	})
+
+	t.Run("Hash index expressions", func(t *testing.T) {
+		tests := []struct {
+			input    string
+			expected interface{}
+		}{
+			{
+				`{"foo": 5}["foo"]`,
+				5,
+			},
+			{
+				`{"foo": 5}["bar"]`,
+				nil,
+			},
+			{
+				`let key = "foo"; {"foo": 5}[key]`,
+				5,
+			},
+			{
+				`{}["foo"]`,
+				nil,
+			},
+			{
+				`{"foo": 5}["foo"]`,
+				5,
+			},
+			{
+				`{5: 5}[5]`,
+				5,
+			},
+			{
+				`{true: 5}[true]`,
+				5,
+			},
+			{
+				`{false: 5}[false]`,
+				5,
+			},
+		}
+
+		for _, test := range tests {
+			evaluated := evaluateInput(t, test.input)
+
+			integer, ok := test.expected.(int)
+
+			if ok {
+				assertIntegerObject(t, evaluated, int64(integer))
+			} else {
+				assertNullObject(t, evaluated)
+			}
+		}
+	})
 }
 
 func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
