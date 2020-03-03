@@ -1,3 +1,3 @@
 # Monkey
 
-This follows the excellent book on how to [write an interpreter in Go](https://interpreterbook.com/) by Thorsten Ball.
+This follows the excellent books on how to [write an interpreter in Go](https://interpreterbook.com/) and how to [write a compiler in Go](https://compilerbook.com/) by Thorsten Ball.
