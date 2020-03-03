@@ -516,7 +516,6 @@ func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
 			t.Errorf("Object has improper value. Expected %d, got %d", want, integerObject.Value)
 		}
 	}
-
 }
 
 func assertBooleanObject(t *testing.T, evaluated object.Object, want bool) {
