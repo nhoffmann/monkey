@@ -537,6 +537,135 @@ func TestParseProgram(t *testing.T) {
 		assertIdentifierLiteral(t, indexExpressions.Left, "myArray")
 		assertInfixExpression(t, indexExpressions.Index, 1, "+", 1)
 	})
+
+	t.Run("Parse hash literals with string keys", func(t *testing.T) {
+		input := `{"one": 1, "two": 2, "three": 3}`
+
+		program := parseInput(t, input)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		hashLiteral, ok := expressionStatement.Expression.(*ast.HashLiteral)
+		assertNodeType(t, ok, hashLiteral, "*ast.HashLiteral")
+		assertLength(t, len(hashLiteral.Pairs), 3)
+
+		expected := map[string]int64{
+			"one":   1,
+			"two":   2,
+			"three": 3,
+		}
+
+		for key, value := range hashLiteral.Pairs {
+			literal, ok := key.(*ast.StringLiteral)
+			if !ok {
+				assertNodeType(t, ok, literal, "*ast.StringLiteral")
+				continue
+			}
+
+			expectedValue := expected[literal.String()]
+			assertIntegerLiteral(t, value, expectedValue)
+		}
+	})
+
+	t.Run("Parse empty hash literal", func(t *testing.T) {
+		input := "{}"
+
+		program := parseInput(t, input)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		hashLiteral, ok := expressionStatement.Expression.(*ast.HashLiteral)
+		assertNodeType(t, ok, hashLiteral, "*ast.HashLiteral")
+
+		if len(hashLiteral.Pairs) != 0 {
+			t.Errorf("Expected 0 pairs, got %d", len(hashLiteral.Pairs))
+		}
+	})
+
+	t.Run("Parse hash literals with boolean keys", func(t *testing.T) {
+		input := `{true: 1, false: 2}`
+
+		program := parseInput(t, input)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		hashLiteral, ok := expressionStatement.Expression.(*ast.HashLiteral)
+		assertNodeType(t, ok, hashLiteral, "*ast.HashLiteral")
+		assertLength(t, len(hashLiteral.Pairs), 2)
+
+		expected := map[string]int64{
+			"true":  1,
+			"false": 2,
+		}
+
+		for key, value := range hashLiteral.Pairs {
+			boolean, ok := key.(*ast.BooleanLiteral)
+			assertNodeType(t, ok, boolean, "*ast.BooleanLiteral")
+
+			expectedValue := expected[boolean.String()]
+			assertIntegerLiteral(t, value, expectedValue)
+		}
+	})
+
+	t.Run("Parse hash literals with integer keys", func(t *testing.T) {
+		input := `{1: 1, 2: 2, 3:3}`
+
+		program := parseInput(t, input)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		hashLiteral, ok := expressionStatement.Expression.(*ast.HashLiteral)
+		assertNodeType(t, ok, hashLiteral, "*ast.HashLiteral")
+		assertLength(t, len(hashLiteral.Pairs), 3)
+
+		expected := map[string]int64{
+			"1": 1,
+			"2": 2,
+			"3": 3,
+		}
+
+		for key, value := range hashLiteral.Pairs {
+			integer, ok := key.(*ast.IntegerLiteral)
+			assertNodeType(t, ok, integer, "*ast.IntegerLiteral")
+
+			expectedValue := expected[integer.String()]
+			assertIntegerLiteral(t, value, expectedValue)
+		}
+	})
+
+	t.Run("Parse hash literals with expressions as values", func(t *testing.T) {
+		input := `{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}`
+
+		program := parseInput(t, input)
+
+		expressionStatement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		hashLiteral, ok := expressionStatement.Expression.(*ast.HashLiteral)
+		assertNodeType(t, ok, hashLiteral, "*ast.HashLiteral")
+		assertLength(t, len(hashLiteral.Pairs), 3)
+
+		tests := map[string]func(ast.Expression){
+			"one": func(e ast.Expression) {
+				assertInfixExpression(t, e, 0, "+", 1)
+			},
+			"two": func(e ast.Expression) {
+				assertInfixExpression(t, e, 10, "-", 8)
+			},
+			"three": func(e ast.Expression) {
+				assertInfixExpression(t, e, 15, "/", 5)
+			},
+		}
+
+		for key, value := range hashLiteral.Pairs {
+			literal, ok := key.(*ast.StringLiteral)
+			if !ok {
+				assertNodeType(t, ok, literal, "*ast.StringLiteral")
+				continue
+			}
+
+			testFunc, ok := tests[literal.String()]
+			if !ok {
+				t.Errorf("No test function for key: %s", literal.String())
+				continue
+			}
+			testFunc(value)
+		}
+	})
 }
 
 func assertStatementsPresent(t *testing.T, program *ast.Program) {
@@ -706,4 +835,12 @@ func parseInput(t *testing.T, input string) *ast.Program {
 	}
 
 	return program
+}
+
+func assertLength(t *testing.T, length, want int) {
+	t.Helper()
+
+	if length != want {
+		t.Errorf("Expected exactly %d elements, got %d", want, length)
+	}
 }
