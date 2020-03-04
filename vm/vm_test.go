@@ -22,6 +22,41 @@ func TestCases(t *testing.T) {
 			{"1", 1},
 			{"2", 2},
 			{"1 + 2", 3},
+			{"1 - 2", -1},
+			{"1 * 2", 2},
+			{"4 / 2", 2},
+			{"50 / 2 * 2 + 10 - 5", 55},
+			{"5 * (2 + 10)", 60},
+			{"5 + 5 + 5 + 5 - 10", 10},
+			{"2 * 2 * 2 * 2 * 2", 32},
+			{"5 * 2 + 10", 20},
+			{"5 + 2 * 10", 25},
+			{"1 < 2", true},
+			{"1 > 2", false},
+			{"1 < 1", false},
+			{"1 > 1", false},
+			{"1 == 1", true},
+			{"1 == 2", false},
+			{"1 != 2", true},
+			{"true == true", true},
+			{"false == false", true},
+			{"true == false", false},
+			{"true != false", true},
+			{"false != true", true},
+			{"true == true", true},
+			{"(1 < 2) == true", true},
+			{"(1 < 2) == false", false},
+			{"(1 > 2) == true", false},
+			{"(1 > 2) == false", true},
+		}
+
+		runVmTests(t, tests)
+	})
+
+	t.Run("Boolean expression", func(t *testing.T) {
+		tests := []vmTestCase{
+			{"true", true},
+			{"false", false},
 		}
 
 		runVmTests(t, tests)
@@ -46,7 +81,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 			t.Fatalf("vm error: %s", err)
 		}
 
-		stackElement := vm.StackTop()
+		stackElement := vm.LastPoppedStackElement()
 
 		assertExpectedObject(t, stackElement, test.expected)
 	}
@@ -58,6 +93,8 @@ func assertExpectedObject(t *testing.T, actual object.Object, expected interface
 	switch expected := expected.(type) {
 	case int:
 		assertIntegerObject(t, actual, int64(expected))
+	case bool:
+		assertBooleanObject(t, actual, bool(expected))
 	}
 }
 
@@ -78,6 +115,20 @@ func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
 	} else {
 		if integerObject.Value != want {
 			t.Errorf("Object has improper value. Expected %d, got %d", want, integerObject.Value)
+		}
+	}
+}
+
+func assertBooleanObject(t *testing.T, evaluated object.Object, want bool) {
+	t.Helper()
+
+	booleanObject, ok := evaluated.(*object.Boolean)
+
+	if !ok {
+		t.Errorf("Object is not a boolean. Got %t: %+v", evaluated, evaluated)
+	} else {
+		if booleanObject.Value != want {
+			t.Errorf("Object has improper value. Expected %t, got %t", want, booleanObject.Value)
 		}
 	}
 }

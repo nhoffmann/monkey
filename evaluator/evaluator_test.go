@@ -530,7 +530,6 @@ func assertBooleanObject(t *testing.T, evaluated object.Object, want bool) {
 			t.Errorf("Object has improper value. Expected %t, got %t", want, booleanObject.Value)
 		}
 	}
-
 }
 
 func assertNullObject(t *testing.T, evaluated object.Object) {
