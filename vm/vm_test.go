@@ -38,6 +38,19 @@ func TestCases(t *testing.T) {
 			{"1 == 1", true},
 			{"1 == 2", false},
 			{"1 != 2", true},
+			{"-5", -5},
+			{"-10", -10},
+			{"-50 + 100 + -50", 0},
+			{"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+		}
+
+		runVmTests(t, tests)
+	})
+
+	t.Run("Boolean expression", func(t *testing.T) {
+		tests := []vmTestCase{
+			{"true", true},
+			{"false", false},
 			{"true == true", true},
 			{"false == false", true},
 			{"true == false", false},
@@ -48,15 +61,12 @@ func TestCases(t *testing.T) {
 			{"(1 < 2) == false", false},
 			{"(1 > 2) == true", false},
 			{"(1 > 2) == false", true},
-		}
-
-		runVmTests(t, tests)
-	})
-
-	t.Run("Boolean expression", func(t *testing.T) {
-		tests := []vmTestCase{
-			{"true", true},
-			{"false", false},
+			{"!true", false},
+			{"!false", true},
+			{"!5", false},
+			{"!!true", true},
+			{"!!false", false},
+			{"!!5", true},
 		}
 
 		runVmTests(t, tests)
