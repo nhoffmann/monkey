@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nhoffmann/monkey/object"
+	"github.com/nhoffmann/monkey/vm"
 
-	"github.com/nhoffmann/monkey/evaluator"
+	"github.com/nhoffmann/monkey/compiler"
+
 	"github.com/nhoffmann/monkey/lexer"
 	"github.com/nhoffmann/monkey/parser"
 )
@@ -18,7 +19,6 @@ const PROMPT = ">> "
 // Start initializes a REPL
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
 
 	for {
 		fmt.Printf(PROMPT)
@@ -38,13 +38,22 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program, env)
-
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
+		compiler := compiler.NewCompiler()
+		err := compiler.Compile(program)
+		if err != nil {
+			fmt.Fprintf(out, "Compilation failed: %s\n", err)
+			continue
 		}
 
+		machine := vm.NewVm(compiler.Bytecode())
+		err = machine.Run()
+		if err != nil {
+			fmt.Fprintf(out, "Executing bytecode failed: %s\n", err)
+		}
+
+		lastPopped := machine.LastPoppedStackElement()
+		io.WriteString(out, lastPopped.Inspect())
+		io.WriteString(out, "\n")
 	}
 }
 
