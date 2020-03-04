@@ -22,6 +22,24 @@ func TestCases(t *testing.T) {
 			{"1", 1},
 			{"2", 2},
 			{"1 + 2", 3},
+			{"1 - 2", -1},
+			{"1 * 2", 2},
+			{"4 / 2", 2},
+			{"50 / 2 * 2 + 10 - 5", 55},
+			{"5 * (2 + 10)", 60},
+			{"5 + 5 + 5 + 5 - 10", 10},
+			{"2 * 2 * 2 * 2 * 2", 32},
+			{"5 * 2 + 10", 20},
+			{"5 + 2 * 10", 25},
+		}
+
+		runVmTests(t, tests)
+	})
+
+	t.Run("Boolean expression", func(t *testing.T) {
+		tests := []vmTestCase{
+			{"true", true},
+			{"false", false},
 		}
 
 		runVmTests(t, tests)
@@ -58,6 +76,8 @@ func assertExpectedObject(t *testing.T, actual object.Object, expected interface
 	switch expected := expected.(type) {
 	case int:
 		assertIntegerObject(t, actual, int64(expected))
+	case bool:
+		assertBooleanObject(t, actual, bool(expected))
 	}
 }
 
@@ -78,6 +98,20 @@ func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
 	} else {
 		if integerObject.Value != want {
 			t.Errorf("Object has improper value. Expected %d, got %d", want, integerObject.Value)
+		}
+	}
+}
+
+func assertBooleanObject(t *testing.T, evaluated object.Object, want bool) {
+	t.Helper()
+
+	booleanObject, ok := evaluated.(*object.Boolean)
+
+	if !ok {
+		t.Errorf("Object is not a boolean. Got %t: %+v", evaluated, evaluated)
+	} else {
+		if booleanObject.Value != want {
+			t.Errorf("Object has improper value. Expected %t, got %t", want, booleanObject.Value)
 		}
 	}
 }

@@ -40,6 +40,59 @@ func TestCases(t *testing.T) {
 					code.Make(code.OpPop),
 				},
 			},
+			{
+				input:             "1 - 2",
+				expectedConstants: []interface{}{1, 2},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpSubtract),
+					code.Make(code.OpPop),
+				},
+			},
+			{
+				input:             "1 * 2",
+				expectedConstants: []interface{}{1, 2},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpMultiply),
+					code.Make(code.OpPop),
+				},
+			},
+			{
+				input:             "2 / 1",
+				expectedConstants: []interface{}{2, 1},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpDivide),
+					code.Make(code.OpPop),
+				},
+			},
+		}
+
+		runCompilerTests(t, tests)
+	})
+
+	t.Run("Boolean expressions", func(t *testing.T) {
+		tests := []compilerTestCase{
+			{
+				input:             "true",
+				expectedConstants: []interface{}{},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpTrue),
+					code.Make(code.OpPop),
+				},
+			},
+			{
+				input:             "false",
+				expectedConstants: []interface{}{},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpFalse),
+					code.Make(code.OpPop),
+				},
+			},
 		}
 
 		runCompilerTests(t, tests)
@@ -78,7 +131,7 @@ func assertInstructions(t *testing.T, expected []code.Instructions, actual code.
 	concattedExpected := concatInstructions(expected)
 
 	if len(actual) != len(concattedExpected) {
-		t.Fatalf("Instructions: wrong length. Wanted %d, got %d", len(concattedExpected), len(actual))
+		t.Fatalf("Instructions: wrong length.\nWant %q,\ngot  %q", concattedExpected, actual)
 	}
 
 	for i, expectedInstruction := range concattedExpected {
