@@ -175,6 +175,25 @@ func TestCases(t *testing.T) {
 
 		runCompilerTests(t, tests)
 	})
+
+	t.Run("Conditionals", func(t *testing.T) {
+		tests := []compilerTestCase{
+			{
+				input:             `if (true) { 10 }; 3333;`,
+				expectedConstants: []interface{}{10, 3333},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpTrue),             // 0000
+					code.Make(code.OpJumpNotTruthy, 7), // 0001
+					code.Make(code.OpConstant, 0),      // 0004
+					code.Make(code.OpPop),              // 0007
+					code.Make(code.OpConstant, 1),      // 0008
+					code.Make(code.OpPop),              // 0011
+				},
+			},
+		}
+
+		runCompilerTests(t, tests)
+	})
 }
 
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
@@ -215,7 +234,7 @@ func assertInstructions(t *testing.T, expected []code.Instructions, actual code.
 	for i, expectedInstruction := range concattedExpected {
 		if actual[i] != expectedInstruction {
 			t.Fatalf(
-				"Instructions: wrong instruction at %d. Want %q, got %q",
+				"Instructions: wrong instruction at %d.\nWant %q,\ngot  %q",
 				i,
 				concattedExpected,
 				actual,
