@@ -67,6 +67,7 @@ func TestCases(t *testing.T) {
 			{"!!true", true},
 			{"!!false", false},
 			{"!!5", true},
+			{"!if (false) { 10 }", true},
 		}
 
 		runVmTests(t, tests)
@@ -81,6 +82,9 @@ func TestCases(t *testing.T) {
 			{"if (1 < 2) { 10 }", 10},
 			{"if (1 < 2) { 10 } else { 20 }", 10},
 			{"if (1 > 2) { 10 } else { 20 }", 20},
+			{"if (1 > 2) { 10 }", Null},
+			{"if (false) { 10 }", Null},
+			{"if (if (false) { 10 }) { 10 } else { 20 }", 20},
 		}
 
 		runVmTests(t, tests)
@@ -119,6 +123,8 @@ func assertExpectedObject(t *testing.T, actual object.Object, expected interface
 		assertIntegerObject(t, actual, int64(expected))
 	case bool:
 		assertBooleanObject(t, actual, bool(expected))
+	case *object.Null:
+		assertNull(t, actual)
 	}
 }
 
@@ -154,5 +160,13 @@ func assertBooleanObject(t *testing.T, evaluated object.Object, want bool) {
 		if booleanObject.Value != want {
 			t.Errorf("Object has improper value. Expected %t, got %t", want, booleanObject.Value)
 		}
+	}
+}
+
+func assertNull(t *testing.T, evaluated object.Object) {
+	t.Helper()
+
+	if evaluated != Null {
+		t.Errorf("Object is not Null: %T %+v", evaluated, evaluated)
 	}
 }
