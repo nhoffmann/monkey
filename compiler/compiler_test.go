@@ -190,6 +190,20 @@ func TestCases(t *testing.T) {
 					code.Make(code.OpPop),              // 0011
 				},
 			},
+			{
+				input:             `if (true) { 10 } else { 20 }; 3333;`,
+				expectedConstants: []interface{}{10, 20, 3333},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpTrue),              // 0000
+					code.Make(code.OpJumpNotTruthy, 10), // 0001
+					code.Make(code.OpConstant, 0),       // 0004
+					code.Make(code.OpJump, 13),          // 0007
+					code.Make(code.OpConstant, 1),       // 0010
+					code.Make(code.OpPop),               // 0013
+					code.Make(code.OpConstant, 2),       // 0014
+					code.Make(code.OpPop),               // 0017
+				},
+			},
 		}
 
 		runCompilerTests(t, tests)

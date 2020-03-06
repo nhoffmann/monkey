@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/nhoffmann/monkey/ast"
 	"github.com/nhoffmann/monkey/code"
@@ -124,7 +123,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-		// Emit an OpJumpNotTruthy with a bogus jump pointer
+
 		jumpNotTruthyPosition := c.emit(code.OpJumpNotTruthy, JUMP_PLACEHOLDER_POSITION)
 
 		err = c.Compile(node.Consequence)
@@ -136,8 +135,27 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.removeLastPop()
 		}
 
-		afterConsequencePosition := len(c.instructions)
-		c.changeOperand(jumpNotTruthyPosition, afterConsequencePosition)
+		if node.Alternative == nil {
+			afterConsequencePosition := len(c.instructions)
+			c.changeOperand(jumpNotTruthyPosition, afterConsequencePosition)
+		} else {
+			jumpPosition := c.emit(code.OpJump, JUMP_PLACEHOLDER_POSITION)
+
+			afterConsequencePosition := len(c.instructions)
+			c.changeOperand(jumpNotTruthyPosition, afterConsequencePosition)
+
+			err := c.Compile(node.Alternative)
+			if err != nil {
+				return err
+			}
+
+			if c.lastInstructionIsPop() {
+				c.removeLastPop()
+			}
+
+			afterAlternativePosition := len(c.instructions)
+			c.changeOperand(jumpPosition, afterAlternativePosition)
+		}
 	case *ast.BlockStatement:
 		for _, statement := range node.Statements {
 			err := c.Compile(statement)
@@ -204,6 +222,5 @@ func (c Compiler) changeOperand(operandPosition, operand int) {
 func (c *Compiler) replaceInstruction(position int, newInstruction []byte) {
 	for i := 0; i < len(newInstruction); i++ {
 		c.instructions[position+i] = newInstruction[i]
-		log.Print(newInstruction[i])
 	}
 }
