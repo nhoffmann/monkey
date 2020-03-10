@@ -23,10 +23,11 @@ type EmittedInstruction struct {
 type Compiler struct {
 	instructions code.Instructions
 	constants    []object.Object
-	symbolTable  *SymbolTable
 
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
+
+	symbolTable *SymbolTable
 }
 
 func NewCompiler() *Compiler {
@@ -37,6 +38,13 @@ func NewCompiler() *Compiler {
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
 	}
+}
+
+func NewCompilerWithState(st *SymbolTable, constants []object.Object) *Compiler {
+	compiler := NewCompiler()
+	compiler.symbolTable = st
+	compiler.constants = constants
+	return compiler
 }
 
 func (c *Compiler) Compile(node ast.Node) error {

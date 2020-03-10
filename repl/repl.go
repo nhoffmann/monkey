@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/nhoffmann/monkey/object"
 	"github.com/nhoffmann/monkey/vm"
 
 	"github.com/nhoffmann/monkey/compiler"
@@ -19,6 +20,10 @@ const PROMPT = ">> "
 // Start initializes a REPL
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalsSize)
+	symbolTable := compiler.NewSymbolTable()
 
 	for {
 		fmt.Printf(PROMPT)
@@ -38,14 +43,14 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		compiler := compiler.NewCompiler()
+		compiler := compiler.NewCompilerWithState(symbolTable, constants)
 		err := compiler.Compile(program)
 		if err != nil {
 			fmt.Fprintf(out, "Compilation failed: %s\n", err)
 			continue
 		}
 
-		machine := vm.NewVm(compiler.Bytecode())
+		machine := vm.NewVmWithGlobalsStore(compiler.Bytecode(), globals)
 		err = machine.Run()
 		if err != nil {
 			fmt.Fprintf(out, "Executing bytecode failed: %s\n", err)
