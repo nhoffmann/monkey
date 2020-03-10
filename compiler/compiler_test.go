@@ -259,6 +259,31 @@ func TestCompiler(t *testing.T) {
 
 		runCompilerTests(t, tests)
 	})
+
+	t.Run("String expressions", func(t *testing.T) {
+		tests := []compilerTestCase{
+			{
+				input:             `"monkey";`,
+				expectedConstants: []interface{}{"monkey"},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpPop),
+				},
+			},
+			{
+				input:             `"mon" + "key";`,
+				expectedConstants: []interface{}{"mon", "key"},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpPop),
+				},
+			},
+		}
+
+		runCompilerTests(t, tests)
+	})
 }
 
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
@@ -329,6 +354,8 @@ func assertConstants(t *testing.T, expected []interface{}, actual []object.Objec
 		switch expectedConstant := expectedConstant.(type) {
 		case int:
 			assertIntegerObject(t, actual[i], int64(expectedConstant))
+		case string:
+			assertStringObject(t, actual[i], expectedConstant)
 		}
 	}
 }
@@ -344,5 +371,19 @@ func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
 		if integerObject.Value != want {
 			t.Errorf("Object has improper value. Expected %d, got %d", want, integerObject.Value)
 		}
+	}
+}
+
+func assertStringObject(t *testing.T, actual object.Object, expected string) {
+	t.Helper()
+
+	stringObject, ok := actual.(*object.String)
+
+	if !ok {
+		t.Errorf("Expected a string object. Got %T: %+v", actual, actual)
+	}
+
+	if stringObject.Value != expected {
+		t.Errorf("Object has wrong value: Expected %s, got %s", expected, stringObject.Value)
 	}
 }
