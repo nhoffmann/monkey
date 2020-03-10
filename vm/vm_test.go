@@ -99,6 +99,16 @@ func TestCases(t *testing.T) {
 
 		runVmTests(t, tests)
 	})
+
+	t.Run("String expressions", func(t *testing.T) {
+		tests := []vmTestCase{
+			{`"monkey"`, "monkey"},
+			{`"mon" + "key"`, "monkey"},
+			{`"mon" + "key" + "banana"`, "monkeybanana"},
+		}
+
+		runVmTests(t, tests)
+	})
 }
 
 func runVmTests(t *testing.T, tests []vmTestCase) {
@@ -133,6 +143,8 @@ func assertExpectedObject(t *testing.T, actual object.Object, expected interface
 		assertIntegerObject(t, actual, int64(expected))
 	case bool:
 		assertBooleanObject(t, actual, bool(expected))
+	case string:
+		assertStringObject(t, actual, expected)
 	case *object.Null:
 		assertNull(t, actual)
 	}
@@ -178,5 +190,19 @@ func assertNull(t *testing.T, evaluated object.Object) {
 
 	if evaluated != Null {
 		t.Errorf("Object is not Null: %T %+v", evaluated, evaluated)
+	}
+}
+
+func assertStringObject(t *testing.T, actual object.Object, expected string) {
+	t.Helper()
+
+	stringObject, ok := actual.(*object.String)
+
+	if !ok {
+		t.Errorf("Object is not a string. Got %T: %+v", actual, actual)
+	} else {
+		if stringObject.Value != expected {
+			t.Errorf("Object has improper value. Expected %s, got %s", expected, stringObject.Value)
+		}
 	}
 }
