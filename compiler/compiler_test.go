@@ -17,7 +17,7 @@ type compilerTestCase struct {
 	expectedInstructions []code.Instructions
 }
 
-func TestCases(t *testing.T) {
+func TestCompiler(t *testing.T) {
 	t.Run("Integer arithmetic", func(t *testing.T) {
 		tests := []compilerTestCase{
 			{
@@ -204,6 +204,55 @@ func TestCases(t *testing.T) {
 					code.Make(code.OpPop),               // 0013
 					code.Make(code.OpConstant, 2),       // 0014
 					code.Make(code.OpPop),               // 0017
+				},
+			},
+		}
+
+		runCompilerTests(t, tests)
+	})
+
+	t.Run("Global let statements", func(t *testing.T) {
+		tests := []compilerTestCase{
+			{
+				input: `
+					let one = 1;
+					let two = 2;
+				`,
+				expectedConstants: []interface{}{1, 2},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetGlobal, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpSetGlobal, 1),
+				},
+			},
+			{
+				input: `
+					let one = 1;
+					one;
+				`,
+				expectedConstants: []interface{}{1},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetGlobal, 0),
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpPop),
+				},
+			},
+			{
+				input: `
+					let one = 1;
+					let two = one;
+					two;
+				`,
+				expectedConstants: []interface{}{1},
+				expectedInstructions: []code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetGlobal, 0),
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpSetGlobal, 1),
+					code.Make(code.OpGetGlobal, 1),
+					code.Make(code.OpPop),
 				},
 			},
 		}
