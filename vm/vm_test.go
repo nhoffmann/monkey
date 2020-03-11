@@ -109,6 +109,16 @@ func TestCases(t *testing.T) {
 
 		runVmTests(t, tests)
 	})
+
+	t.Run("Array literals", func(t *testing.T) {
+		tests := []vmTestCase{
+			{"[]", []int{}},
+			{"[1, 2, 3]", []int{1, 2, 3}},
+			{"[1 + 2, 3 * 4, 5 + 6]", []int{3, 12, 11}},
+		}
+
+		runVmTests(t, tests)
+	})
 }
 
 func runVmTests(t *testing.T, tests []vmTestCase) {
@@ -141,6 +151,8 @@ func assertExpectedObject(t *testing.T, actual object.Object, expected interface
 	switch expected := expected.(type) {
 	case int:
 		assertIntegerObject(t, actual, int64(expected))
+	case []int:
+		assertIntegerArray(t, actual, expected)
 	case bool:
 		assertBooleanObject(t, actual, bool(expected))
 	case string:
@@ -168,6 +180,21 @@ func assertIntegerObject(t *testing.T, evaluated object.Object, want int64) {
 		if integerObject.Value != want {
 			t.Errorf("Object has improper value. Expected %d, got %d", want, integerObject.Value)
 		}
+	}
+}
+
+func assertIntegerArray(t *testing.T, actual object.Object, expected []int) {
+	array, ok := actual.(*object.Array)
+	if !ok {
+		t.Errorf("Object is not an array. Got %T: %+v", actual, actual)
+	}
+
+	if len(array.Elements) != len(expected) {
+		t.Errorf("Wrong number of elements. Got %d, want %d", len(array.Elements), len(expected))
+	}
+
+	for i, expectedElement := range expected {
+		assertIntegerObject(t, array.Elements[i], int64(expectedElement))
 	}
 }
 
