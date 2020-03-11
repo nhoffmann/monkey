@@ -190,6 +190,15 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 		c.emit(code.OpGetGlobal, symbol.Index)
+	case *ast.ArrayLiteral:
+		for _, element := range node.Elements {
+			err := c.Compile(element)
+			if err != nil {
+				return err
+			}
+		}
+
+		c.emit(code.OpArray, len(node.Elements))
 	}
 
 	return nil
