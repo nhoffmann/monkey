@@ -119,6 +119,22 @@ func TestCases(t *testing.T) {
 
 		runVmTests(t, tests)
 	})
+
+	t.Run("Hash literals", func(t *testing.T) {
+		tests := []vmTestCase{
+			{"{}", map[object.HashKey]int64{}},
+			{"{1: 2, 2: 3}", map[object.HashKey]int64{
+				(&object.Integer{Value: 1}).HashKey(): 2,
+				(&object.Integer{Value: 2}).HashKey(): 3,
+			}},
+			{"{1 + 1: 2 * 2, 3 + 3: 4 * 4}", map[object.HashKey]int64{
+				(&object.Integer{Value: 2}).HashKey(): 4,
+				(&object.Integer{Value: 6}).HashKey(): 16,
+			}},
+		}
+
+		runVmTests(t, tests)
+	})
 }
 
 func runVmTests(t *testing.T, tests []vmTestCase) {
@@ -157,6 +173,8 @@ func assertExpectedObject(t *testing.T, actual object.Object, expected interface
 		assertBooleanObject(t, actual, bool(expected))
 	case string:
 		assertStringObject(t, actual, expected)
+	case map[object.HashKey]int64:
+		assertHashWithIntegerKeysAndValues(t, actual, expected)
 	case *object.Null:
 		assertNull(t, actual)
 	}
@@ -231,5 +249,27 @@ func assertStringObject(t *testing.T, actual object.Object, expected string) {
 		if stringObject.Value != expected {
 			t.Errorf("Object has improper value. Expected %s, got %s", expected, stringObject.Value)
 		}
+	}
+}
+
+func assertHashWithIntegerKeysAndValues(t *testing.T, actual object.Object, expected map[object.HashKey]int64) {
+	t.Helper()
+
+	hash, ok := actual.(*object.Hash)
+	if !ok {
+		t.Errorf("Object is not a hash. Got %T: %+v", actual, actual)
+	}
+
+	if len(hash.Pairs) != len(expected) {
+		t.Errorf("Hash has wrong number of pairs. Expected %d, got %d.", len(expected), len(hash.Pairs))
+	}
+
+	for expectedKey, expectedValue := range expected {
+		pair, ok := hash.Pairs[expectedKey]
+		if !ok {
+			t.Errorf("No pair for a given key in Pairs. Key: %q", expectedKey)
+		}
+
+		assertIntegerObject(t, pair.Value, expectedValue)
 	}
 }
